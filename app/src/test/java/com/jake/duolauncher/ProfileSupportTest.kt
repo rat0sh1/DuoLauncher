@@ -97,4 +97,11 @@ class ProfileSupportTest {
         assertEquals(false, privateProfile.isPersonal)
         assertEquals(false, privateProfile.isWork)
     }
+
+    @Test fun launcherStateHasHidePrivateWhenLockedOption() {
+        val defaultState = LauncherState()
+        assertEquals(false, defaultState.hidePrivateWhenLocked)
+        val hiddenState = LauncherState(hidePrivateWhenLocked = true)
+        assertEquals(true, hiddenState.hidePrivateWhenLocked)
+    }
 }

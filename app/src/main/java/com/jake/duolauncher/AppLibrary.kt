@@ -60,8 +60,10 @@ internal fun AppLibrary(
     var activeTab by remember { mutableStateOf("personal") }
     var wasPrivateUnlocked by remember { mutableStateOf(isPrivateUnlocked) }
 
-    LaunchedEffect(isPrivateUnlocked) {
-        if (isPrivateUnlocked && !wasPrivateUnlocked) {
+    LaunchedEffect(isPrivateUnlocked, state.hidePrivateWhenLocked) {
+        if (!isPrivateUnlocked && state.hidePrivateWhenLocked && activeTab == "private") {
+            activeTab = "personal"
+        } else if (isPrivateUnlocked && !wasPrivateUnlocked) {
             activeTab = "private"
             onQuery("")
         }
@@ -79,7 +81,8 @@ internal fun AppLibrary(
         listState.scrollToItem(0)
     }
 
-    val showTabs = hasWork || hasPrivate
+    val showPrivateTab = hasPrivate && (!state.hidePrivateWhenLocked || isPrivateUnlocked)
+    val showTabs = hasWork || showPrivateTab
 
     val visibleApps = remember(state.apps, query, activeTab, showTabs, hasWork, hasPrivate, isPrivateUnlocked) {
         state.apps.filter { app ->
@@ -108,7 +111,10 @@ internal fun AppLibrary(
         "private space".contains(trimmedQuery) ||
         trimmedQuery.contains("priv") ||
         trimmedQuery.contains("secr") ||
-        trimmedQuery.contains("candado")
+        trimmedQuery.contains("candado") ||
+        trimmedQuery.contains("ocult") ||
+        trimmedQuery.contains("lock") ||
+        trimmedQuery.contains("espa")
     )
 
     Surface(modifier, shape = RoundedCornerShape(24.dp),
@@ -139,7 +145,7 @@ internal fun AppLibrary(
                         label = { Text("Work") }
                     )
                 }
-                if (hasPrivate) {
+                if (showPrivateTab) {
                     FilterChip(
                         selected = activeTab == "private",
                         onClick = {
@@ -286,7 +292,7 @@ internal fun AppLibrary(
                         }
                     }
                 }
-                if (query.isBlank() && activeTab == "personal" && privateProfile != null && !isPrivateUnlocked) item("unlock-private-space-footer") {
+                if (!state.hidePrivateWhenLocked && query.isBlank() && activeTab == "personal" && privateProfile != null && !isPrivateUnlocked) item("unlock-private-space-footer") {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()

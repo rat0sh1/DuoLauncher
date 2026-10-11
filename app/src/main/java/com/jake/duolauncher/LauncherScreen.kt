@@ -1902,6 +1902,14 @@ private fun SettingsPanel(state: LauncherState, initiallyWide: Boolean, model: L
         }
         Text("Opens Google’s search screen. All apps keeps local app search.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (state.profiles.any { it.isPrivate } || state.apps.any { it.isPrivate }) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Hide Private Space when locked", Modifier.weight(1f))
+                Switch(state.hidePrivateWhenLocked, model::setHidePrivateWhenLocked, Modifier.testTag("hide-private-switch"))
+            }
+            Text("When locked, hides the Private tab and shortcut until you search for 'private' in All apps.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         TextButton(onClick = { model.setPreset(wide, LayoutPreset()) }) { Text("Reset this layout") }
         HorizontalDivider(Modifier.padding(vertical = 12.dp))
         TextButton(onClick = onWallpaperPreview, modifier = Modifier.fillMaxWidth().testTag("wallpaper-preview")) {
