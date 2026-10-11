@@ -61,9 +61,7 @@ internal fun AppLibrary(
     var wasPrivateUnlocked by remember { mutableStateOf(isPrivateUnlocked) }
 
     LaunchedEffect(isPrivateUnlocked) {
-        if (!isPrivateUnlocked && activeTab == "private") {
-            activeTab = "personal"
-        } else if (isPrivateUnlocked && !wasPrivateUnlocked) {
+        if (isPrivateUnlocked && !wasPrivateUnlocked) {
             activeTab = "private"
             onQuery("")
         }
@@ -81,7 +79,7 @@ internal fun AppLibrary(
         listState.scrollToItem(0)
     }
 
-    val showTabs = hasWork || (hasPrivate && isPrivateUnlocked)
+    val showTabs = hasWork || hasPrivate
 
     val visibleApps = remember(state.apps, query, activeTab, showTabs, hasWork, hasPrivate, isPrivateUnlocked) {
         state.apps.filter { app ->
@@ -141,14 +139,31 @@ internal fun AppLibrary(
                         label = { Text("Work") }
                     )
                 }
-                if (hasPrivate && isPrivateUnlocked) {
+                if (hasPrivate) {
                     FilterChip(
                         selected = activeTab == "private",
-                        onClick = { activeTab = "private" },
-                        label = { Text("Privado") }
+                        onClick = {
+                            activeTab = "private"
+                            if (!isPrivateUnlocked && privateProfile != null) {
+                                onUnlockPrivate(privateProfile.userSerial)
+                            }
+                        },
+                        label = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (!isPrivateUnlocked) {
+                                    Icon(
+                                        Icons.Rounded.Lock,
+                                        contentDescription = null,
+                                        tint = ink,
+                                        modifier = Modifier.size(14.dp).padding(end = 4.dp)
+                                    )
+                                }
+                                Text("Privado")
+                            }
+                        }
                     )
                     Spacer(Modifier.weight(1f))
-                    if (activeTab == "private" && privateProfile != null) {
+                    if (activeTab == "private" && privateProfile != null && isPrivateUnlocked) {
                         IconButton(
                             onClick = { onLockPrivate(privateProfile.userSerial) },
                             modifier = Modifier.size(32.dp).testTag("lock-private-space")
@@ -267,6 +282,50 @@ internal fun AppLibrary(
                                     if (isPinned) "Remove ${app.label} from home" else "Pin ${app.label} to home",
                                     tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                                     modifier = Modifier.size(20.dp))
+                            }
+                        }
+                }
+                if (query.isBlank() && activeTab == "personal" && privateProfile != null && !isPrivateUnlocked) item("unlock-private-space-footer") {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 8.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onUnlockPrivate(privateProfile.userSerial) }
+                            .testTag("unlock-private-footer-item"),
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (glass) (if (palette.dark) Color(0xFF2C3E50) else Color(0xFFE8EEF5))
+                                else MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = if (glass) ink else MaterialTheme.colorScheme.onPrimaryContainer,
+                        border = if (glass) BorderStroke(1.dp, Color.White.copy(alpha = .3f)) else null
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Rounded.Lock,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = if (glass) ink else MaterialTheme.colorScheme.primary
+                            )
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 14.dp)
+                            ) {
+                                Text(
+                                    "Espacio privado",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    "Bloqueado · Toca para desbloquear",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = ink.copy(alpha = 0.75f)
+                                )
                             }
                         }
                     }
