@@ -76,4 +76,25 @@ class ProfileSupportTest {
             temporarilyUnavailable = setOf(42L to "com.work"), confirmedRemoved = emptySet(), personalSerial = 0,
             definitivelyRemovedProfiles = setOf(42)))
     }
+
+    @Test fun privateProfileAppIdentitySupportsProfileAppId() {
+        val component = "com.secret.app/.MainActivity"
+        val privateApp = profileAppId(component, userSerial = 99, personalSerial = 0)
+        assertEquals("duo-profile:v1:99:$component", privateApp)
+        assertEquals(ProfileAppIdentity(component, 99L), parseProfileAppId(privateApp))
+    }
+
+    @Test fun appProfileDefaultsIsPrivateToFalse() {
+        val defaultProfile = AppProfile(10, "Personal", isPersonal = true, isWork = false,
+            quiet = false, unlocked = true, available = true)
+        assertEquals(false, defaultProfile.isPrivate)
+    }
+
+    @Test fun privateProfileHasIsPrivateSetToTrue() {
+        val privateProfile = AppProfile(99, "Private", isPersonal = false, isWork = false,
+            quiet = true, unlocked = false, available = false, isPrivate = true)
+        assertEquals(true, privateProfile.isPrivate)
+        assertEquals(false, privateProfile.isPersonal)
+        assertEquals(false, privateProfile.isWork)
+    }
 }

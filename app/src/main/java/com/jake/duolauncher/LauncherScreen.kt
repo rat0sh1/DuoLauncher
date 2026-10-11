@@ -531,6 +531,8 @@ fun LauncherScreen(
                         libraryQuery = libraryQuery, onLibraryQuery = { libraryQuery = it },
                         onLaunch = onLaunch, onLaunchFrom = onLaunchFrom, onPinned = model::setPinned,
                         onTurnOnWork = { model.turnOnWork(it) },
+                        onUnlockPrivate = { model.unlockProfile(it) },
+                        onLockPrivate = { model.lockProfile(it) },
                         onActions = { selectedId = it.id }, onWidget = { widgetSlot = it; sheet = "widgetActions" },
                         onFolder = { openFolderId = it },
                         onEmptyWidget = { emptyCellIndex = it },
@@ -552,7 +554,8 @@ fun LauncherScreen(
                     } else if (page == visibleHomePages) {
                         AppLibrary(state, libraryQuery, { libraryQuery = it }, onLaunch, model::setPinned,
                             onActions = { selectedId = it.id }, modifier = Modifier.fillMaxSize().padding(start = 16.dp, top = 16.dp, bottom = bottomSpace).testTag("library-page"),
-                            drag = drag, page = visibleHomePages, onLaunchFrom = onLaunchFrom, onTurnOnWork = { model.turnOnWork(it) })
+                            drag = drag, page = visibleHomePages, onLaunchFrom = onLaunchFrom, onTurnOnWork = { model.turnOnWork(it) },
+                            onUnlockPrivate = { model.unlockProfile(it) }, onLockPrivate = { model.lockProfile(it) })
                     } else {
                         Row(Modifier.fillMaxSize().testTag("home-surface")) {
                             HomePagePane(page, state, previewLayout.slots, previewLayout.leadingSlots, previewLayout.widgetPlacements, appsById, geometry, contentHeight,
@@ -654,7 +657,9 @@ fun LauncherScreen(
                             }
                             AppLibrary(state, pinQuery, { pinQuery = it }, onLaunch, model::setPinned,
                                 onActions = { selectedId = it.id; sheet = "" }, editing = true, modifier = Modifier.weight(1f).fillMaxWidth(),
-                                onTurnOnWork = { model.turnOnWork(it) })
+                                onTurnOnWork = { model.turnOnWork(it) },
+                                onUnlockPrivate = { model.unlockProfile(it) },
+                                onLockPrivate = { model.lockProfile(it) })
                         }
                         "settings", "settings:wallpaper" -> CustomizationSheet(state, wide, model, isDefaultHome,
                             page = activeCustomizationPage, onPage = { customizationPage = it; sheet = "settings" },
@@ -1218,6 +1223,8 @@ private fun ExpandedWorkspace(
     onLaunchFrom: (AppEntry, android.graphics.Rect?) -> Unit,
     onPinned: (String, Boolean) -> Unit,
     onTurnOnWork: (Long) -> Unit,
+    onUnlockPrivate: (Long) -> Unit = onTurnOnWork,
+    onLockPrivate: (Long) -> Unit = {},
     onActions: (AppEntry) -> Unit,
     onWidget: (Int) -> Unit,
     onFolder: (String) -> Unit,
@@ -1323,7 +1330,8 @@ private fun ExpandedWorkspace(
                         onActions = onActions,
                         modifier = Modifier.fillMaxSize().padding(start = 16.dp, top = 16.dp, bottom = bottomSpace)
                             .testTag("library-page"),
-                        drag = drag, page = visibleHomePages, onLaunchFrom = onLaunchFrom, onTurnOnWork = onTurnOnWork)
+                        drag = drag, page = visibleHomePages, onLaunchFrom = onLaunchFrom, onTurnOnWork = onTurnOnWork,
+                        onUnlockPrivate = onUnlockPrivate, onLockPrivate = onLockPrivate)
                 }
             }
         }

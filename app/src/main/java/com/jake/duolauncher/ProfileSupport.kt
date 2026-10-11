@@ -16,6 +16,7 @@ data class AppProfile(
     val quiet: Boolean,
     val unlocked: Boolean,
     val available: Boolean,
+    val isPrivate: Boolean = false,
 )
 
 private const val PROFILE_APP_PREFIX = "duo-profile:v1:"
@@ -62,3 +63,10 @@ fun isSupportedWorkProfile(launcherApps: LauncherApps, user: UserHandle): Boolea
     Build.VERSION.SDK_INT < 35 || runCatching {
         launcherApps.getLauncherUserInfo(user)?.userType == UserManager.USER_TYPE_PROFILE_MANAGED
     }.getOrDefault(false)
+
+/** API 35 introduces private space profiles (Android 15 Private Space). */
+fun isSupportedPrivateProfile(launcherApps: LauncherApps, user: UserHandle): Boolean =
+    Build.VERSION.SDK_INT >= 35 && runCatching {
+        launcherApps.getLauncherUserInfo(user)?.userType == UserManager.USER_TYPE_PROFILE_PRIVATE
+    }.getOrDefault(false)
+

@@ -35,6 +35,7 @@ data class AppEntry(
     val profileLabel: String = "Personal",
     val isWork: Boolean = false,
     val available: Boolean = true,
+    val isPrivate: Boolean = false,
 ) {
     val packageName: String get() = component.packageName
 }
@@ -142,21 +143,28 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
                     val handles = launcherApps.profiles
                         .filter { profile ->
                             val serial = userManager.getSerialNumberForUser(profile)
-                            serial in associatedSerials && (serial == personalSerial || isSupportedWorkProfile(launcherApps, profile))
+                            serial in associatedSerials && (serial == personalSerial || isSupportedWorkProfile(launcherApps, profile) || isSupportedPrivateProfile(launcherApps, profile))
                         }
                         .distinctBy(userManager::getSerialNumberForUser)
                     val profiles = handles.map { profile ->
                         val serial = userManager.getSerialNumberForUser(profile)
                         val isPersonal = serial == personalSerial
+                        val isPrivate = !isPersonal && isSupportedPrivateProfile(launcherApps, profile)
+                        val isWork = !isPersonal && !isPrivate && isSupportedWorkProfile(launcherApps, profile)
                         val quiet = !isPersonal && runCatching { userManager.isQuietModeEnabled(profile) }.getOrDefault(false)
                         val unlocked = runCatching { userManager.isUserUnlocked(profile) }.getOrDefault(isPersonal)
-                        AppProfile(serial, if (isPersonal) "Personal" else "Work", isPersonal, !isPersonal,
-                            quiet, unlocked, !quiet && unlocked)
+                        val label = when {
+                            isPersonal -> "Personal"
+                            isPrivate -> "Private"
+                            else -> "Work"
+                        }
+                        AppProfile(serial, label, isPersonal, isWork,
+                            quiet, unlocked, !quiet && unlocked, isPrivate)
                     }
                     val cachedBeforeProfiles = loadCachedApps().filterNot { entry -> entry.userSerial to entry.packageName in removed }
                     val removedProfileSerials = removedAssociatedProfileSerials(
-                        cachedBeforeProfiles.filter(AppEntry::isWork).mapTo(mutableSetOf(), AppEntry::userSerial), associatedSerials)
-                    val cached = cachedBeforeProfiles.filterNot { it.isWork && it.userSerial in removedProfileSerials }
+                        cachedBeforeProfiles.filter { it.isWork || it.isPrivate }.mapTo(mutableSetOf(), AppEntry::userSerial), associatedSerials)
+                    val cached = cachedBeforeProfiles.filterNot { (it.isWork || it.isPrivate) && it.userSerial in removedProfileSerials }
                     val authoritativeProfiles = mutableSetOf<Long>()
                     authoritativeProfiles += removedProfileSerials
                     val live = handles.flatMap { profile ->
@@ -171,7 +179,7 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
                             iconCache[id]?.takeIf { it.label == label && it.available } ?: run {
                                 val icon = runCatching { info.getBadgedIcon(0) }.getOrElse { application.packageManager.defaultActivityIcon }
                                 AppEntry(id, label, launcherIcon(icon), component, profile, serial, descriptor.label,
-                                    descriptor.isWork, available = true).also { iconCache[id] = it }
+                                    descriptor.isWork, available = true, isPrivate = descriptor.isPrivate).also { iconCache[id] = it }
                             }
                         }
                     }
@@ -190,8 +198,8 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
                         .sortedWith { a, b -> collator.compare(a.label, b.label) }
                     saveCachedApps(entries)
                     iconCache.keys.retainAll(entries.map { it.id }.toSet())
-                    RefreshedApps(entries, (profiles + unavailable.map { AppProfile(it.userSerial, it.profileLabel, false, true,
-                        quiet = true, unlocked = false, available = false) }).distinctBy(AppProfile::userSerial),
+                    RefreshedApps(entries, (profiles + unavailable.map { AppProfile(it.userSerial, it.profileLabel, false, it.isWork,
+                        quiet = true, unlocked = false, available = false, isPrivate = it.isPrivate) }).distinctBy(AppProfile::userSerial),
                         authoritativeProfiles.toSet(), removedProfileSerials)
                 }
                 mutable.update { old ->
@@ -242,18 +250,20 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             val component = ComponentName.unflattenFromString(identity.component) ?: error("Invalid cached component")
             val serial = item.getLong("serial").takeIf { it >= 0 } ?: error("Invalid cached profile")
             val user = userManager.getUserForSerialNumber(serial) ?: personal
-            val isWork = item.optBoolean("work", identity.userSerial != null)
+            val isPrivate = item.optBoolean("private", false)
+            val isWork = !isPrivate && item.optBoolean("work", identity.userSerial != null)
             val baseIcon = application.packageManager.defaultActivityIcon
             val icon = runCatching { application.packageManager.getUserBadgedIcon(baseIcon, user) }.getOrDefault(baseIcon)
             AppEntry(id, item.getString("label"), launcherIcon(icon), component, user, serial,
-                item.optString("profile", if (isWork) "Work" else "Personal"), isWork, available = false)
+                item.optString("profile", if (isPrivate) "Private" else if (isWork) "Work" else "Personal"),
+                isWork, available = false, isPrivate = isPrivate)
         }
     }.getOrDefault(emptyList())
 
     private fun saveCachedApps(apps: List<AppEntry>) {
         val array = JSONArray().also { result -> apps.forEach { app -> result.put(JSONObject()
             .put("id", app.id).put("label", app.label).put("serial", app.userSerial)
-            .put("profile", app.profileLabel).put("work", app.isWork)) } }
+            .put("profile", app.profileLabel).put("work", app.isWork).put("private", app.isPrivate)) } }
         appCatalogPrefs.edit().putString("apps", array.toString()).apply()
     }
 
@@ -264,7 +274,7 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             listOf("com.google.android.apps.messaging", "com.samsung.android.messaging"),
             listOf("com.spotify.music", "com.google.android.apps.youtube.music"),
         )
-        return packages.map { choices -> choices.firstNotNullOfOrNull { pkg -> apps.firstOrNull { !it.isWork && it.packageName == pkg }?.id } }
+        return packages.map { choices -> choices.firstNotNullOfOrNull { pkg -> apps.firstOrNull { !it.isWork && !it.isPrivate && it.packageName == pkg }?.id } }
     }
 
     private fun suggestedPins(apps: List<AppEntry>, dock: List<String?>): List<String> {
@@ -302,11 +312,19 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
         persist()
     }
 
-    fun turnOnWork(userSerial: Long): Boolean = runCatching {
+    fun unlockProfile(userSerial: Long): Boolean = runCatching {
         val user = userManager.getUserForSerialNumber(userSerial) ?: return false
         if (userManager.getSerialNumberForUser(Process.myUserHandle()) == userSerial || user !in launcherApps.profiles) return false
         userManager.requestQuietModeEnabled(false, user).also { refresh() }
     }.getOrDefault(false)
+
+    fun lockProfile(userSerial: Long): Boolean = runCatching {
+        val user = userManager.getUserForSerialNumber(userSerial) ?: return false
+        if (userManager.getSerialNumberForUser(Process.myUserHandle()) == userSerial || user !in launcherApps.profiles) return false
+        userManager.requestQuietModeEnabled(true, user).also { refresh() }
+    }.getOrDefault(false)
+
+    fun turnOnWork(userSerial: Long): Boolean = unlockProfile(userSerial)
 
     fun setDock(slot: Int, id: String?) {
         if (statePayloadInvalid) return
