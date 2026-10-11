@@ -284,6 +284,7 @@ internal fun AppLibrary(
                                     modifier = Modifier.size(20.dp))
                             }
                         }
+                    }
                 }
                 if (query.isBlank() && activeTab == "personal" && privateProfile != null && !isPrivateUnlocked) item("unlock-private-space-footer") {
                     Surface(
