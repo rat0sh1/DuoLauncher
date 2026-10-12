@@ -351,14 +351,16 @@ private fun DiscoverDock(state: LauncherState, status: DeviceStatus, fullSize: S
     }
     DiscoverMotion.pageWidth = (fullWidth - preset.dockWidth - 28f) * density.density
     Box(Modifier.fillMaxSize().testTag("discover-chrome").semantics { testTagsAsResourceId = true }) {
-        Canvas(Modifier.fillMaxSize()) {
-            val offset = fullSize.width - size.width
-            translate(left = -offset) {
-                // Draw the same full-screen wallpaper coordinates in this narrow viewport.
-                val native = drawContext.canvas
-                val painter = androidx.compose.ui.graphics.drawscope.CanvasDrawScope()
-                painter.draw(density, layoutDirection, native, fullSize) {
-                    drawLauncherBackground(backgroundPhoto, DuoAppearanceRuntime.dark)
+        if (backgroundPhoto != null) {
+            Canvas(Modifier.fillMaxSize()) {
+                val offset = fullSize.width - size.width
+                translate(left = -offset) {
+                    // Draw the same full-screen wallpaper coordinates in this narrow viewport.
+                    val native = drawContext.canvas
+                    val painter = androidx.compose.ui.graphics.drawscope.CanvasDrawScope()
+                    painter.draw(density, layoutDirection, native, fullSize) {
+                        drawLauncherBackground(backgroundPhoto, DuoAppearanceRuntime.dark)
+                    }
                 }
             }
         }
