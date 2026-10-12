@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add Android 15 Private Space support in All apps: a Private tab, unlock and lock controls, and an option to hide the space while it is locked. A hidden locked space appears only when searching for "private" (or "privado" / "espacio privado").
+- The Home search button now opens local app search with the keyboard ready on fresh installations; existing layouts keep their search choice.
+- "Reset" now returns to the Android system wallpaper instead of Duo's dunes.
+
 ## 0.15.0-beta01
 
 First public-beta preparation release. Tested scope and APK checksums accompany the release package.
