@@ -68,7 +68,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     CustomizationDestination(Icons.Rounded.GridView, "Home layout",
                         "Icons, spacing, dock, and widgets", "customization-home") { onPage(CustomizationPage.HOME) }
                     CustomizationDestination(Icons.Rounded.Search, "Gestures & search",
-                        "Labels, status, and search behavior", "customization-gestures") { onPage(CustomizationPage.GESTURES) }
+                        "Labels, status, search, and Private Space", "customization-gestures") { onPage(CustomizationPage.GESTURES) }
                     CustomizationDestination(Icons.Rounded.Save, "Backup",
                         "Save or restore this layout", "customization-backup") { onPage(CustomizationPage.BACKUP) }
                     CustomizationDestination(Icons.Rounded.HelpOutline, "Help & setup",
@@ -116,6 +116,11 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     SettingsSwitch("Search button opens Google", state.googleSearch, model::setGoogleSearch, "google-search-switch")
                     Text("All apps always keeps local app search.", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                    SettingsSwitch("Hide Private Space when locked", state.hidePrivateWhenLocked, model::setHidePrivateWhenLocked, "hide-private-switch")
+                    Text("When locked, hides the Private tab and shortcut until you search for 'private' in All apps.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
                     Text("Swipe sideways anywhere on Home to change pages. Swipe down for notifications or quick settings.",
                         style = MaterialTheme.typography.bodyMedium)
                 }
