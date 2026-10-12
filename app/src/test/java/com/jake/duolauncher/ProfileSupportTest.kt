@@ -1,6 +1,8 @@
 package com.jake.duolauncher
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -103,5 +105,12 @@ class ProfileSupportTest {
         assertEquals(false, defaultState.hidePrivateWhenLocked)
         val hiddenState = LauncherState(hidePrivateWhenLocked = true)
         assertEquals(true, hiddenState.hidePrivateWhenLocked)
+    }
+
+    @Test fun onlyPrivateSpaceNamesRevealLockedPrivateSpace() {
+        listOf("priv", "Private", "private sp", " private space ", "privado", "espacio priv", "Espacio Privado")
+            .forEach { assertTrue(it, matchesPrivateSpaceQuery(it)) }
+        listOf("", "pr", "clock", "lock", "España", "espa", "espacio", "secret", "privacy", "carpeta privada")
+            .forEach { assertFalse(it, matchesPrivateSpaceQuery(it)) }
     }
 }

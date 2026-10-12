@@ -636,7 +636,8 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             leadingSlots = rawLeadingSlots,
             dock = loadedDock,
             widgetPlacements = placements, folders = folders, widgetRestores = restores,
-            googleSearch = j.optBoolean("googleSearch", false),
+            // Saved layouts from before this setting existed always opened Google search.
+            googleSearch = j.optBoolean("googleSearch", true),
             labels = j.optBoolean("labels", true), compact = preset("compact", LayoutPreset()),
             expanded = preset("expanded", LayoutPreset()), verticalStatus = j.optBoolean("verticalStatus", true),
             hidePrivateWhenLocked = j.optBoolean("hidePrivateWhenLocked", false))

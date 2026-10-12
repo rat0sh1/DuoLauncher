@@ -64,6 +64,13 @@ fun isSupportedWorkProfile(launcherApps: LauncherApps, user: UserHandle): Boolea
         launcherApps.getLauncherUserInfo(user)?.userType == UserManager.USER_TYPE_PROFILE_MANAGED
     }.getOrDefault(false)
 
+/** Only a Private Space name may reveal a locked profile; ordinary searches such as "clock" must not. */
+internal fun matchesPrivateSpaceQuery(query: String): Boolean {
+    val q = query.trim().lowercase()
+    return q.length >= 4 && ("private space".startsWith(q) || "privado".startsWith(q)) ||
+        q.length >= 9 && "espacio privado".startsWith(q)
+}
+
 /** API 35 introduces private space profiles (Android 15 Private Space). */
 fun isSupportedPrivateProfile(launcherApps: LauncherApps, user: UserHandle): Boolean =
     Build.VERSION.SDK_INT >= 35 && runCatching {
