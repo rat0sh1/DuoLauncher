@@ -51,7 +51,7 @@ data class LauncherState(
     val dock: List<String?> = List(4) { null },
     val widgetPlacements: List<WidgetPlacement> = DEFAULT_WIDGET_PLACEMENTS,
     val widgetRestores: List<WidgetRestore> = emptyList(),
-    val googleSearch: Boolean = true,
+    val googleSearch: Boolean = false,
     val compact: LayoutPreset = LayoutPreset(),
     val expanded: LayoutPreset = LayoutPreset(),
     val labels: Boolean = true,
@@ -636,7 +636,7 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             leadingSlots = rawLeadingSlots,
             dock = loadedDock,
             widgetPlacements = placements, folders = folders, widgetRestores = restores,
-            googleSearch = j.optBoolean("googleSearch", true),
+            googleSearch = j.optBoolean("googleSearch", false),
             labels = j.optBoolean("labels", true), compact = preset("compact", LayoutPreset()),
             expanded = preset("expanded", LayoutPreset()), verticalStatus = j.optBoolean("verticalStatus", true),
             hidePrivateWhenLocked = j.optBoolean("hidePrivateWhenLocked", false))

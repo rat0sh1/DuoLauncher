@@ -164,5 +164,9 @@ class HomeEditingTest {
         assertTrue(canPlaceInDock(layout.copy(dock = listOf("a", "b")), "a"))
     }
 
+    @Test fun `google search defaults to false for app search priority`() {
+        assertFalse(LauncherState().googleSearch)
+    }
+
     private fun shortcuts(layout: HomeLayout) = (layout.slots + layout.dock).filterNotNull().toSet()
 }

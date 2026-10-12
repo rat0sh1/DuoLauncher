@@ -31,7 +31,11 @@ class GoogleSearchIntegrationTest {
         shell("input touchscreen motionevent CANCEL 0 0")
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             var preferences: String? = null
-            scenario.onActivity { preferences = it.getSharedPreferences("launcher", 0).getString("state", null) }
+            scenario.onActivity {
+                val model = androidx.lifecycle.ViewModelProvider(it)[LauncherModel::class.java]
+                model.setGoogleSearch(true)
+                preferences = it.getSharedPreferences("launcher", 0).getString("state", null)
+            }
             await { find(automation.rootInActiveWindow) { it.contentDescription == "Search Google" } != null }
             val search = find(automation.rootInActiveWindow) { it.contentDescription == "Search Google" }!!
             val bounds = android.graphics.Rect().also(search::getBoundsInScreen)

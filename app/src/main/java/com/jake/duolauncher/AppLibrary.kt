@@ -31,6 +31,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 
 @Composable
 internal fun AppLibrary(
@@ -42,6 +45,7 @@ internal fun AppLibrary(
     onTurnOnWork: (Long) -> Unit = {},
     onUnlockPrivate: (Long) -> Unit = onTurnOnWork,
     onLockPrivate: (Long) -> Unit = {},
+    focusSearchTrigger: Int = 0,
 ) {
     val glass = !editing
     val palette = LocalDuoPalette.current
@@ -77,6 +81,16 @@ internal fun AppLibrary(
     }
 
     val listState = rememberLazyListState()
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(focusSearchTrigger) {
+        if (focusSearchTrigger > 0) {
+            try {
+                focusRequester.requestFocus()
+                keyboard?.show()
+            } catch (_: Exception) {}
+        }
+    }
     LaunchedEffect(activeTab, selectedProfile?.available, selectedProfile?.quiet) {
         listState.scrollToItem(0)
     }
@@ -184,7 +198,9 @@ internal fun AppLibrary(
                     }
                 }
             }
-            OutlinedTextField(query, onQuery, Modifier.fillMaxWidth().padding(vertical = 12.dp).testTag(if (editing) "pin-search" else "library-search"),
+            OutlinedTextField(query, onQuery, Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                .focusRequester(focusRequester)
+                .testTag(if (editing) "pin-search" else "library-search"),
                 placeholder = { Text("Search apps") }, singleLine = true, shape = RoundedCornerShape(16.dp),
                 leadingIcon = { Icon(Icons.Rounded.Search, null) },
                 trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { onQuery("") }) { Icon(Icons.Rounded.Close, "Clear search") } },

@@ -279,8 +279,18 @@ fun LauncherScreen(
         focus.clearFocus(); keyboard?.hide()
         pager.animateScrollToPage(page)
     } }
+    var focusSearchTrigger by remember { mutableIntStateOf(0) }
+    val openDiscover = { if (firstHome > 0) scope.launch { pager.animateScrollToPage(-1) } else onDiscover(); Unit }
+    val openLibrary = { scope.launch { pager.animateScrollToPage(homePages) }; Unit }
+    val openSearch = {
+        scope.launch {
+            pager.animateScrollToPage(homePages)
+            focusSearchTrigger++
+        }
+        Unit
+    }
     LaunchedEffect(searchRequests) { if (searchRequests > 0) { drag.clear(); widgetSession = null; resizeSlot = null; sheet = ""; widgetPackage = null; widgetExactTarget = false; selectedId = null
-        if (!state.googleSearch || !onGoogleSearch(null)) pager.animateScrollToPage(homePages)
+        if (!state.googleSearch || !onGoogleSearch(null)) openSearch()
     } }
     val widgetPickerBack = {
         if (widgetSession != null) {
@@ -294,8 +304,6 @@ fun LauncherScreen(
         val destination = if (drag.source?.target is DropTarget.Library) homePages else drag.originPage.coerceAtMost(homePages - 1)
         drag.clear(); scope.launch { pager.scrollToPage(destination) }
     } else if (selectedId != null) selectedId = null else { focus.clearFocus(); scope.launch { pager.animateScrollToPage(0) } } }
-    val openDiscover = { if (firstHome > 0) scope.launch { pager.animateScrollToPage(-1) } else onDiscover(); Unit }
-    val openLibrary = { scope.launch { pager.animateScrollToPage(homePages) }; Unit }
 
     val dragWindowPage = if (expandedWorkspace && (drag.active || widgetSession != null)) pager.settledPage else pager.currentPage
     val eligibleDragPages = remember(expandedWorkspace, dragWindowPage, visibleHomePages) {
@@ -537,6 +545,7 @@ fun LauncherScreen(
                         onFolder = { openFolderId = it },
                         onEmptyWidget = { emptyCellIndex = it },
                         onRefresh = model::refresh,
+                        focusSearchTrigger = focusSearchTrigger,
                     )
                 }
             } else {
@@ -555,7 +564,8 @@ fun LauncherScreen(
                         AppLibrary(state, libraryQuery, { libraryQuery = it }, onLaunch, model::setPinned,
                             onActions = { selectedId = it.id }, modifier = Modifier.fillMaxSize().padding(start = 16.dp, top = 16.dp, bottom = bottomSpace).testTag("library-page"),
                             drag = drag, page = visibleHomePages, onLaunchFrom = onLaunchFrom, onTurnOnWork = { model.turnOnWork(it) },
-                            onUnlockPrivate = { model.unlockProfile(it) }, onLockPrivate = { model.lockProfile(it) })
+                            onUnlockPrivate = { model.unlockProfile(it) }, onLockPrivate = { model.lockProfile(it) },
+                            focusSearchTrigger = focusSearchTrigger)
                     } else {
                         Row(Modifier.fillMaxSize().testTag("home-surface")) {
                             HomePagePane(page, state, previewLayout.slots, previewLayout.leadingSlots, previewLayout.widgetPlacements, appsById, geometry, contentHeight,
@@ -618,7 +628,7 @@ fun LauncherScreen(
                 val searchBounds = remember { android.graphics.Rect() }
                 Box(Modifier.onGloballyPositioned { searchBounds.set(it.boundsInWindow().toAndroidBounds()) }) {
                     CircleControl(Icons.Rounded.Search, if (state.googleSearch) "Search Google" else "Search apps", "search", controlSize) {
-                        if (!state.googleSearch || !onGoogleSearch(searchBounds)) openLibrary()
+                        if (!state.googleSearch || !onGoogleSearch(searchBounds)) openSearch()
                     }
                 }
             }
@@ -1230,6 +1240,7 @@ private fun ExpandedWorkspace(
     onFolder: (String) -> Unit,
     onEmptyWidget: (Int) -> Unit,
     onRefresh: () -> Unit,
+    focusSearchTrigger: Int = 0,
 ) {
     val density = LocalDensity.current
     val viewportWidth = motion.pageWidth
@@ -1331,7 +1342,8 @@ private fun ExpandedWorkspace(
                         modifier = Modifier.fillMaxSize().padding(start = 16.dp, top = 16.dp, bottom = bottomSpace)
                             .testTag("library-page"),
                         drag = drag, page = visibleHomePages, onLaunchFrom = onLaunchFrom, onTurnOnWork = onTurnOnWork,
-                        onUnlockPrivate = onUnlockPrivate, onLockPrivate = onLockPrivate)
+                        onUnlockPrivate = onUnlockPrivate, onLockPrivate = onLockPrivate,
+                        focusSearchTrigger = focusSearchTrigger)
                 }
             }
         }
